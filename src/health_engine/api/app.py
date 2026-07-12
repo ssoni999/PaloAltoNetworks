@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from health_engine import __version__
 from health_engine.api.schemas import (
@@ -23,6 +28,22 @@ app = FastAPI(
         "and recurring patterns in health time-series data."
     ),
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+_FRONTEND_DIST = Path(__file__).resolve().parents[3] / "frontend" / "dist"
+if _FRONTEND_DIST.is_dir():
+    app.mount("/assets", StaticFiles(directory=_FRONTEND_DIST / "assets"), name="assets")
+
+    @app.get("/")
+    def serve_frontend() -> FileResponse:
+        return FileResponse(_FRONTEND_DIST / "index.html")
 
 
 @app.get("/v1/health", response_model=HealthResponse)

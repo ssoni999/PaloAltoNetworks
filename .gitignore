@@ -13,3 +13,10 @@ venv/
 .DS_Store
 *.json
 !pyproject.toml
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+!frontend/tsconfig.app.json
+!frontend/tsconfig.node.json
+node_modules/
+frontend/dist/
