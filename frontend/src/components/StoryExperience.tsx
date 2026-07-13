@@ -9,7 +9,6 @@ import { Stage04Correlations } from "./stages/Stage04Correlations";
 import { Stage05Patterns } from "./stages/Stage05Patterns";
 import { Stage06Anomaly } from "./stages/Stage06Anomaly";
 import { Stage07Explain } from "./stages/Stage07Explain";
-import { Stage08Recommendations } from "./stages/Stage08Recommendations";
 import { Stage09Architecture } from "./stages/Stage09Architecture";
 import { Stage10Evaluation } from "./stages/Stage10Evaluation";
 import { Stage11Chat } from "./stages/Stage11Chat";
@@ -50,10 +49,9 @@ export function StoryExperience({
           {stage === 4 && <Stage05Patterns />}
           {stage === 5 && <Stage06Anomaly />}
           {stage === 6 && <Stage07Explain />}
-          {stage === 7 && <Stage08Recommendations />}
-          {stage === 8 && <Stage09Architecture />}
-          {stage === 9 && <Stage10Evaluation />}
-          {stage === 10 && (
+          {stage === 7 && <Stage09Architecture />}
+          {stage === 8 && <Stage10Evaluation />}
+          {stage === 9 && (
             <Stage11Chat
               onBack={onBack}
               onRestart={handleRestart}
@@ -63,15 +61,15 @@ export function StoryExperience({
         </div>
       </AnimatePresence>
 
-      {stage > 0 && stage < 10 && (
+      {stage > 0 && stage < 9 && (
         <StoryNav
           onBack={onBack}
           onContinue={onNext}
           canBack={!isFirst}
-          continueLabel={stage === 9 ? "Chat with Health Advisor" : "Continue"}
+          continueLabel={stage === 8 ? "Chat with Health Advisor" : "Continue"}
         />
       )}
-      {stage === 10 && <div className="h-8" />}
+      {stage === 9 && <div className="h-8" />}
     </>
   );
 }

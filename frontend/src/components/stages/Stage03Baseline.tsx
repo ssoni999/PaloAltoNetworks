@@ -74,6 +74,11 @@ export function Stage03Baseline() {
     };
   }, [series]);
 
+  const nDays =
+    Number(analysis?.meta?.n_days) ||
+    series.length ||
+    365;
+
   return (
     <StorySection
       stageNumber={3}
@@ -81,6 +86,46 @@ export function Stage03Baseline() {
       subtitle="The system compares Emily primarily against her own historical behavior instead of only using population-wide thresholds."
     >
       <ApiStatusBanner loading={loading} error={error} meta={analysis?.meta} />
+
+      <div className="story-card border-l-4 border-l-teal-400 bg-gradient-to-br from-slate-900 to-slate-800 px-6 py-5 text-white">
+        <p className="font-mono text-sm leading-relaxed sm:text-base">
+          <span className="italic">X</span>
+          <sub className="text-xs">t</sub>
+          {" = [sleep"}
+          <sub className="text-xs">t</sub>
+          {", restingHR"}
+          <sub className="text-xs">t</sub>
+          {", steps"}
+          <sub className="text-xs">t</sub>
+          {", workout"}
+          <sub className="text-xs">t</sub>
+          {", HRV"}
+          <sub className="text-xs">t</sub>
+          {", caffeine"}
+          <sub className="text-xs">t</sub>
+          {", screenTime"}
+          <sub className="text-xs">t</sub>
+          {", alcohol"}
+          <sub className="text-xs">t</sub>
+          {", outdoorTime"}
+          <sub className="text-xs">t</sub>
+          ]
+        </p>
+        <p className="mt-4 text-sm leading-relaxed text-slate-300">
+          Across {nDays} days, Emily&apos;s history becomes a multivariate time
+          series:
+        </p>
+        <p className="mt-2 font-mono text-sm sm:text-base">
+          <span className="italic">X</span>
+          <sub className="text-xs">1</sub>
+          {", "}
+          <span className="italic">X</span>
+          <sub className="text-xs">2</sub>
+          {", …, "}
+          <span className="italic">X</span>
+          <sub className="text-xs">{nDays}</sub>
+        </p>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <BaselineCard label="Typical sleep" value={`${baselines.sleep} hours`} />

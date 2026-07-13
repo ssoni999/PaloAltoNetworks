@@ -28,7 +28,7 @@ export function Stage10Evaluation() {
 
   return (
     <StorySection
-      stageNumber={10}
+      stageNumber={9}
       title="Show Evaluation Results"
       subtitle="Live scores from POST /v1/evaluate against planted synthetic ground truth."
     >

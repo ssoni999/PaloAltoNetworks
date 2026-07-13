@@ -66,6 +66,40 @@ export function Stage04Correlations() {
         not just same-day Pearson.
       </p>
 
+      <div className="story-card border-l-4 border-l-violet-500 bg-gradient-to-br from-slate-900 to-slate-800 px-6 py-5 text-white">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-violet-300">
+          Lagged linear model
+        </p>
+        <p className="overflow-x-auto font-mono text-sm leading-relaxed sm:text-base">
+          <span className="italic">Sleep</span>
+          <sub className="text-xs">t+1</sub>
+          {" = β"}
+          <sub className="text-xs">0</sub>
+          {" + β"}
+          <sub className="text-xs">1</sub>
+          {" Workout"}
+          <sub className="text-xs">t</sub>
+          {" + β"}
+          <sub className="text-xs">2</sub>
+          {" Caffeine"}
+          <sub className="text-xs">t</sub>
+          {" + β"}
+          <sub className="text-xs">3</sub>
+          {" ScreenTime"}
+          <sub className="text-xs">t</sub>
+          {" + β"}
+          <sub className="text-xs">4</sub>
+          {" Stress"}
+          <sub className="text-xs">t</sub>
+          {" + ε"}
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-slate-300">
+          Today&apos;s behaviors predict tomorrow&apos;s sleep — the engine scans
+          pairs like these at multiple lags and tests whether each β is
+          statistically supported in Emily&apos;s series.
+        </p>
+      </div>
+
       <div className="space-y-4">
         {top.map((finding, i) =>
           i < revealed ? (
