@@ -4,6 +4,7 @@ import { StorySection } from "../story/StorySection";
 interface Props {
   onRestart: () => void;
   onDashboard: () => void;
+  onChat: () => void;
 }
 
 const CARDS = [
@@ -24,7 +25,7 @@ const CARDS = [
   },
 ];
 
-export function StageFinal({ onRestart, onDashboard }: Props) {
+export function StageFinal({ onRestart, onDashboard, onChat }: Props) {
   return (
     <StorySection title="">
       <div className="text-center">
@@ -63,10 +64,13 @@ export function StageFinal({ onRestart, onDashboard }: Props) {
       </div>
 
       <div className="flex flex-wrap justify-center gap-4 pt-4">
+        <button type="button" className="btn-primary px-6" onClick={onChat}>
+          Chat with Health Advisor
+        </button>
         <button type="button" className="btn-secondary" onClick={onRestart}>
           Restart Story
         </button>
-        <button type="button" className="btn-primary" onClick={onDashboard}>
+        <button type="button" className="btn-secondary" onClick={onDashboard}>
           Explore Full Dashboard
         </button>
       </div>

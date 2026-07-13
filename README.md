@@ -63,16 +63,21 @@ scripts/evaluate.py  # CLI evaluation report
 
 ## Frontend
 
-An interactive **story-driven demo** follows Emily, a remote worker whose fatigue the correlation engine investigates step by step. A secondary **dashboard mode** is available after the story for deeper exploration.
+An interactive **story-driven demo** follows Emily while calling the **live Python engine**.
+Clicking **Investigate Emily's Data** runs `POST /v1/analyze` (synthetic data, seed=42).
+Later stages render real Isolation Forest / Mahalanobis diagnostics, lagged & partial
+correlations, patterns, ranked insights, and `POST /v1/evaluate` metrics.
 
 ### Development
 
+**Both servers are required** — the UI no longer uses hardcoded analysis numbers.
+
 ```bash
-# Terminal 1 — API (optional; story uses mock data)
+# Terminal 1 — API
 source .venv/bin/activate
 uvicorn health_engine.api.app:app --reload --app-dir src
 
-# Terminal 2 — Story UI
+# Terminal 2 — Story UI (Vite proxies /v1 → :8000)
 cd frontend
 npm install
 npm run dev
@@ -91,4 +96,19 @@ Open **http://127.0.0.1:8000**
 
 ### Story stages
 
-1. Meet Emily → 2. Connect the Data → 3. Learn Her Baseline → 4. Hidden Correlations → 5. Recurring Patterns → 6. Detect an Anomaly → 7. Explain What Happened → 8. Recommend Next Steps → 9. Technical Engine → 10. Evaluation Results → Conclusion → Full Dashboard
+1. Meet Emily → … → 10. Evaluation Results → 11. Conclusion → 12. **Health Advisor Chat**
+
+Technical stages show formulas, z-scores, feature vectors, IF/Mahalanobis thresholds, and FDR-corrected correlations from the API response (`result.diagnostics`, `result.daily_series`).
+
+### Health Advisor Chat (LLM)
+
+The final stage connects to **OpenRouter** via `POST /v1/chat`. Each message re-runs the analysis pipeline and injects correlations, anomalies, patterns, and insights into the LLM context.
+
+```bash
+cp .env.example .env
+# Edit .env and set OPENROUTER_API_KEY=your_key
+pip install -e ".[dev]"   # installs httpx + python-dotenv
+uvicorn health_engine.api.app:app --reload --app-dir src
+```
+
+Optional: `OPENROUTER_MODEL=openai/gpt-4o-mini` (default)

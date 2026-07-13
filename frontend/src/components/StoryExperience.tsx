@@ -1,5 +1,6 @@
 import { AnimatePresence } from "framer-motion";
 import type { StoryStageId } from "../constants/story";
+import { useEngine } from "../hooks/useEngine";
 import { StoryNav } from "./story/StorySection";
 import { Stage01MeetEmily } from "./stages/Stage01MeetEmily";
 import { Stage02ConnectData } from "./stages/Stage02ConnectData";
@@ -12,6 +13,7 @@ import { Stage08Recommendations } from "./stages/Stage08Recommendations";
 import { Stage09Architecture } from "./stages/Stage09Architecture";
 import { Stage10Evaluation } from "./stages/Stage10Evaluation";
 import { StageFinal } from "./stages/StageFinal";
+import { Stage11Chat } from "./stages/Stage11Chat";
 
 interface StoryExperienceProps {
   stage: StoryStageId;
@@ -26,22 +28,23 @@ interface StoryExperienceProps {
 export function StoryExperience({
   stage,
   isFirst,
-  isLast,
   onBack,
   onNext,
   onRestart,
   onDashboard,
 }: StoryExperienceProps) {
-  const continueLabel =
-    stage === 0 ? undefined : isLast ? "Finish" : "Continue";
+  const { clear } = useEngine();
+
+  function handleRestart() {
+    clear();
+    onRestart();
+  }
 
   return (
     <>
       <AnimatePresence mode="wait">
         <div key={stage}>
-          {stage === 0 && (
-            <Stage01MeetEmily onInvestigate={onNext} />
-          )}
+          {stage === 0 && <Stage01MeetEmily onInvestigate={onNext} />}
           {stage === 1 && <Stage02ConnectData />}
           {stage === 2 && <Stage03Baseline />}
           {stage === 3 && <Stage04Correlations />}
@@ -52,7 +55,18 @@ export function StoryExperience({
           {stage === 8 && <Stage09Architecture />}
           {stage === 9 && <Stage10Evaluation />}
           {stage === 10 && (
-            <StageFinal onRestart={onRestart} onDashboard={onDashboard} />
+            <StageFinal
+              onRestart={handleRestart}
+              onDashboard={onDashboard}
+              onChat={onNext}
+            />
+          )}
+          {stage === 11 && (
+            <Stage11Chat
+              onBack={onBack}
+              onRestart={handleRestart}
+              onDashboard={onDashboard}
+            />
           )}
         </div>
       </AnimatePresence>
@@ -62,12 +76,10 @@ export function StoryExperience({
           onBack={onBack}
           onContinue={onNext}
           canBack={!isFirst}
-          continueLabel={continueLabel}
+          continueLabel="Continue"
         />
       )}
-      {stage === 10 && (
-        <div className="h-8" />
-      )}
+      {(stage === 10 || stage === 11) && <div className="h-8" />}
     </>
   );
 }

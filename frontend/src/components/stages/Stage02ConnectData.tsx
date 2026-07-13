@@ -1,19 +1,23 @@
 import { motion } from "framer-motion";
 import { StorySection } from "../story/StorySection";
-import { getSampleTableRows } from "../../data/emilyMockData";
+import { ApiStatusBanner } from "../story/TechnicalPanel";
+import { useEngine } from "../../hooks/useEngine";
+import { formatMetric } from "../../types/api";
 
 const SOURCES = [
-  { name: "Sleep", color: "bg-indigo-400" },
-  { name: "Heart rate", color: "bg-rose-400" },
-  { name: "Steps", color: "bg-emerald-400" },
-  { name: "Workouts", color: "bg-amber-400" },
-  { name: "Stress", color: "bg-orange-400" },
-  { name: "Caffeine", color: "bg-yellow-500" },
-  { name: "Mood", color: "bg-violet-400" },
+  { name: "Sleep", color: "bg-indigo-400", key: "sleep_duration" },
+  { name: "Heart rate", color: "bg-rose-400", key: "resting_hr" },
+  { name: "Steps", color: "bg-emerald-400", key: "steps" },
+  { name: "Workouts", color: "bg-amber-400", key: "workout_minutes" },
+  { name: "Workout hour", color: "bg-orange-400", key: "workout_hour" },
+  { name: "HRV", color: "bg-violet-400", key: "hrv" },
 ];
 
 export function Stage02ConnectData() {
-  const rows = getSampleTableRows(5);
+  const { analysis, loading, error } = useEngine();
+  const rows = (analysis?.result.daily_series ?? [])
+    .filter((r) => r.values.sleep_duration != null)
+    .slice(10, 15);
 
   return (
     <StorySection
@@ -21,8 +25,10 @@ export function Stage02ConnectData() {
       title="Connect the Data"
       subtitle="The engine aligns fragmented health streams into one shared daily timeline so relationships across different metrics can be analyzed together."
     >
+      <ApiStatusBanner loading={loading} error={error} meta={analysis?.meta} />
+
       <div className="relative flex min-h-[280px] flex-col items-center justify-center rounded-2xl bg-gradient-to-b from-slate-50 to-white p-8">
-        <div className="grid w-full max-w-lg grid-cols-3 gap-4 sm:grid-cols-4">
+        <div className="grid w-full max-w-lg grid-cols-3 gap-4 sm:grid-cols-3">
           {SOURCES.map((s, i) => (
             <motion.div
               key={s.name}
@@ -52,40 +58,56 @@ export function Stage02ConnectData() {
           <p className="text-sm font-semibold text-health-700">
             Health & Wellness Correlation Engine
           </p>
-          <p className="mt-1 text-xs text-slate-500">Unified daily timeline</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Unified daily timeline · {analysis?.result.daily_series.length ?? 0} days
+          </p>
         </motion.div>
       </div>
 
       <div className="story-card overflow-x-auto">
-        <h4 className="mb-3 text-sm font-semibold text-slate-700">Sample daily records</h4>
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-              <th className="pb-2 pr-3">Date</th>
-              <th className="pb-2 pr-3">Sleep</th>
-              <th className="pb-2 pr-3">Resting HR</th>
-              <th className="pb-2 pr-3">Steps</th>
-              <th className="pb-2 pr-3">Workout</th>
-              <th className="pb-2 pr-3">Stress</th>
-              <th className="pb-2 pr-3">Caffeine</th>
-              <th className="pb-2">Mood</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.date} className="border-b border-slate-100">
-                <td className="py-2 pr-3 font-mono text-xs">{r.date}</td>
-                <td className="py-2 pr-3">{r.sleepDuration}h</td>
-                <td className="py-2 pr-3">{r.restingHr}</td>
-                <td className="py-2 pr-3">{r.steps.toLocaleString()}</td>
-                <td className="py-2 pr-3">{r.workoutMinutes > 0 ? `${r.workoutMinutes}m` : "—"}</td>
-                <td className="py-2 pr-3">{r.stress}</td>
-                <td className="py-2 pr-3">{r.caffeine}mg</td>
-                <td className="py-2">{r.mood}</td>
+        <h4 className="mb-3 text-sm font-semibold text-slate-700">
+          Live daily records from{" "}
+          <code className="text-xs">align_bundle()</code>
+        </h4>
+        {rows.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            No series yet — run Investigate on stage 1 to load API data.
+          </p>
+        ) : (
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+                <th className="pb-2 pr-3">Date</th>
+                {SOURCES.map((s) => (
+                  <th key={s.key} className="pb-2 pr-3">
+                    {formatMetric(s.key)}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.date} className="border-b border-slate-100">
+                  <td className="py-2 pr-3 font-mono text-xs">{r.date}</td>
+                  {SOURCES.map((s) => {
+                    const v = r.values[s.key];
+                    return (
+                      <td key={s.key} className="py-2 pr-3">
+                        {v == null
+                          ? "—"
+                          : s.key === "steps"
+                            ? Math.round(v).toLocaleString()
+                            : s.key.includes("hour")
+                              ? v.toFixed(1)
+                              : v.toFixed(1)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </StorySection>
   );

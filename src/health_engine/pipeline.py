@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from health_engine.anomaly import detect_anomalies
+from health_engine.anomaly import detect_anomalies_with_diagnostics
 from health_engine.correlation import (
     discover_directed_links,
     discover_lagged_correlations,
@@ -16,6 +16,7 @@ from health_engine.insights import rank_insights
 from health_engine.models import (
     AnalysisResult,
     CorrelationFinding,
+    DailySeriesPoint,
     EvalMetrics,
     GroundTruth,
     Insight,
@@ -50,11 +51,14 @@ def analyze_bundle(
 
     # Merge correlations: prefer lagged for ranking, keep partial/directed as extras
     merged = _merge_correlations(lagged, partial, directed)
-    anomalies = detect_anomalies(frame, contamination=contamination)
+    anomalies, diagnostics = detect_anomalies_with_diagnostics(
+        frame, contamination=contamination
+    )
     patterns = discover_patterns(frame)
     insights = rank_insights(
         merged, anomalies, patterns, top_k=top_k_insights
     )
+    daily_series = _frame_to_daily_series(frame)
 
     return AnalysisResult(
         correlations=merged,
@@ -62,7 +66,23 @@ def analyze_bundle(
         patterns=patterns,
         insights=insights,
         user_id=bundle.user_id,
+        diagnostics=diagnostics,
+        daily_series=daily_series,
     )
+
+
+def _frame_to_daily_series(frame) -> List[DailySeriesPoint]:
+    points: List[DailySeriesPoint] = []
+    for idx, row in frame.iterrows():
+        day = idx.date() if hasattr(idx, "date") else date.fromisoformat(str(idx)[:10])
+        values: Dict[str, Optional[float]] = {}
+        for col, val in row.items():
+            if val is None or (isinstance(val, float) and val != val):  # NaN
+                values[str(col)] = None
+            else:
+                values[str(col)] = float(val)
+        points.append(DailySeriesPoint(date=day, values=values))
+    return points
 
 
 def _pair_key(a: MetricName, b: MetricName) -> frozenset:

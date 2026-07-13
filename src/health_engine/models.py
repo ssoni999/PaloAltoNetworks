@@ -76,6 +76,50 @@ class AnomalyEvent(BaseModel):
     univariate_ok: bool = True
 
 
+class DayAnomalyScore(BaseModel):
+    """Per-day intermediate scores from the multivariate anomaly model."""
+
+    date: date
+    iso_score: float
+    mahalanobis: float
+    combined_score: float
+    flagged: bool
+    iso_outlier: bool
+    z_scores: Dict[str, float] = Field(default_factory=dict)
+    univariate_flags: Dict[str, bool] = Field(default_factory=dict)
+    feature_vector: Dict[str, float] = Field(default_factory=dict)
+    contributing_metrics: List[MetricName] = Field(default_factory=list)
+
+
+class AnomalyDiagnostics(BaseModel):
+    """Technical intermediates for interview / debugging UI."""
+
+    timeline: List[DayAnomalyScore] = Field(default_factory=list)
+    feature_names: List[str] = Field(default_factory=list)
+    contamination: float = 0.05
+    iso_p95: float = 0.0
+    mahalanobis_p90: float = 0.0
+    mahalanobis_p75: float = 0.0
+    top_anomaly: Optional[DayAnomalyScore] = None
+    formulas: Dict[str, str] = Field(
+        default_factory=lambda: {
+            "expanding_z": "z_t = (x_t - μ_{1:t}) / σ_{1:t}",
+            "mahalanobis": "d_M(x) = (x-μ)^T Σ^{-1} (x-μ)",
+            "combined_score": "0.6 * iso_score + 0.4 * (d_M / d_M_p90)",
+            "univariate_gate": "|z| > 2.5 on any single metric",
+            "decision_rule": (
+                "flag if IsolationForest(label=-1) AND "
+                "(d_M >= p90 OR (iso_score >= p95 AND d_M >= p75))"
+            ),
+        }
+    )
+
+
+class DailySeriesPoint(BaseModel):
+    date: date
+    values: Dict[str, Optional[float]] = Field(default_factory=dict)
+
+
 class PatternFinding(BaseModel):
     condition: str
     outcome: str
@@ -130,6 +174,8 @@ class AnalysisResult(BaseModel):
     patterns: List[PatternFinding]
     insights: List[Insight]
     user_id: str
+    diagnostics: Optional[AnomalyDiagnostics] = None
+    daily_series: List[DailySeriesPoint] = Field(default_factory=list)
 
 
 class EvalMetrics(BaseModel):

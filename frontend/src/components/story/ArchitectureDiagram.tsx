@@ -10,8 +10,6 @@ const PIPELINE = [
   { id: "correlation", label: "Correlation analysis", detail: "Pearson, Spearman, lagged, partial, regression, and Granger predictability tests run across metric pairs.", sub: ["Pearson correlation", "Spearman correlation", "Lagged correlation", "Partial correlation", "Regression", "Granger predictability"] },
   { id: "anomaly", label: "Anomaly detection", detail: "Multivariate Isolation Forest compares today's full health state to Emily's personal baseline.", sub: ["Rolling z-score baseline", "Isolation Forest"] },
   { id: "pattern", label: "Pattern detection", detail: "Autocorrelation and periodicity analysis surface recurring weekly and behavioral cycles.", sub: ["Grouped behavior analysis", "Autocorrelation", "Periodicity detection"] },
-  { id: "rank", label: "Insight ranking", detail: "Findings are scored for actionability, statistical support, and relevance to Emily's concern." },
-  { id: "frontend", label: "Frontend experience", detail: "The story-driven UI you're exploring now — turning analysis into a narrative." },
 ];
 
 export function ArchitectureDiagram() {

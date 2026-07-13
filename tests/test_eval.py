@@ -35,6 +35,31 @@ def test_analyze_synthetic_endpoint():
     assert "result" in body
     assert body["result"]["user_id"]
     assert isinstance(body["result"]["insights"], list)
+    assert body["result"]["diagnostics"] is not None
+    assert "timeline" in body["result"]["diagnostics"]
+    assert isinstance(body["result"]["daily_series"], list)
+    assert len(body["result"]["daily_series"]) > 0
+
+
+def test_anomaly_diagnostics_include_scores():
+    from health_engine.anomaly import detect_anomalies_with_diagnostics
+    from health_engine.data import align_bundle, generate_synthetic
+
+    ds = generate_synthetic(seed=42, n_days=180)
+    frame, _ = align_bundle(ds.bundle)
+    events, diagnostics = detect_anomalies_with_diagnostics(frame)
+    assert events
+    assert diagnostics.timeline
+    assert diagnostics.top_anomaly is not None
+    assert diagnostics.top_anomaly.flagged
+    assert diagnostics.feature_names
+    assert "expanding_z" in diagnostics.formulas
+    top = diagnostics.top_anomaly
+    assert top.iso_score > 0
+    assert top.mahalanobis >= 0
+    assert top.z_scores
+    assert top.univariate_flags
+    assert top.feature_vector
 
 
 def test_evaluate_endpoint():

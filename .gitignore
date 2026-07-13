@@ -20,3 +20,7 @@ venv/
 !frontend/tsconfig.node.json
 node_modules/
 frontend/dist/
+.env
+.env.local
+*.env
+!.env.example
