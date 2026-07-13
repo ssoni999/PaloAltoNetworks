@@ -6,7 +6,11 @@ export type MetricName =
   | "workout_minutes"
   | "workout_hour"
   | "steps"
-  | "hrv";
+  | "hrv"
+  | "caffeine"
+  | "screen_time_before_bed"
+  | "alcohol_units"
+  | "outdoor_minutes";
 
 export interface CorrelationFinding {
   metric_a: MetricName;
@@ -127,6 +131,10 @@ export const METRIC_LABELS: Record<string, string> = {
   workout_hour: "Workout Hour",
   steps: "Steps",
   hrv: "HRV",
+  caffeine: "Caffeine",
+  screen_time_before_bed: "Pre-bed Screen",
+  alcohol_units: "Alcohol",
+  outdoor_minutes: "Outdoor Time",
 };
 
 export function formatMetric(name: string): string {

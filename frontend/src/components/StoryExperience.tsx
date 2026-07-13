@@ -12,7 +12,6 @@ import { Stage07Explain } from "./stages/Stage07Explain";
 import { Stage08Recommendations } from "./stages/Stage08Recommendations";
 import { Stage09Architecture } from "./stages/Stage09Architecture";
 import { Stage10Evaluation } from "./stages/Stage10Evaluation";
-import { StageFinal } from "./stages/StageFinal";
 import { Stage11Chat } from "./stages/Stage11Chat";
 
 interface StoryExperienceProps {
@@ -55,13 +54,6 @@ export function StoryExperience({
           {stage === 8 && <Stage09Architecture />}
           {stage === 9 && <Stage10Evaluation />}
           {stage === 10 && (
-            <StageFinal
-              onRestart={handleRestart}
-              onDashboard={onDashboard}
-              onChat={onNext}
-            />
-          )}
-          {stage === 11 && (
             <Stage11Chat
               onBack={onBack}
               onRestart={handleRestart}
@@ -76,10 +68,10 @@ export function StoryExperience({
           onBack={onBack}
           onContinue={onNext}
           canBack={!isFirst}
-          continueLabel="Continue"
+          continueLabel={stage === 9 ? "Chat with Health Advisor" : "Continue"}
         />
       )}
-      {(stage === 10 || stage === 11) && <div className="h-8" />}
+      {stage === 10 && <div className="h-8" />}
     </>
   );
 }

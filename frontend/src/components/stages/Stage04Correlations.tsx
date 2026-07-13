@@ -89,11 +89,16 @@ function LiveCorrelationCard({
   finding: CorrelationFinding;
   index: number;
 }) {
+  const isGranger = finding.method === "granger";
+  const isDirected = finding.method.startsWith("directed_");
+  const strengthLabel = isGranger ? "Signed r (at Granger lag)" : "r / strength";
+  const direction =
+    finding.strength < 0 ? "Inversely" : finding.strength > 0 ? "Positively" : "Not clearly";
   const chartData = [
     { label: formatMetric(finding.metric_a), value: Math.abs(finding.strength) },
     {
       label: `${formatMetric(finding.metric_b)} (lag ${finding.lag_days}d)`,
-      value: Math.abs(finding.strength) * (finding.strength < 0 ? 0.85 : 1.05),
+      value: Math.abs(finding.strength),
     },
   ];
 
@@ -113,18 +118,20 @@ function LiveCorrelationCard({
             {formatMetric(finding.metric_a)} ↔ {formatMetric(finding.metric_b)}
           </h4>
           <p className="mt-1 text-sm text-slate-600">
-            {finding.strength < 0 ? "Inversely" : "Positively"} associated
+            {direction} associated
             {finding.lag_days !== 0
               ? ` with lag ${finding.lag_days} day(s)`
               : " (same day)"}
             {finding.partial ? " after controlling for confounders" : ""}.
-            {finding.method === "granger"
-              ? " Soft directed evidence via Granger predictability."
-              : ""}
+            {isGranger
+              ? " Granger test confirms predictability at this lag; signed r shows direction."
+              : isDirected
+                ? " Directed lag scan (cause leads effect)."
+                : ""}
           </p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <Mini label="r / strength" value={finding.strength.toFixed(3)} />
+            <Mini label={strengthLabel} value={finding.strength.toFixed(3)} />
             <Mini label="Lag" value={`${finding.lag_days}d`} />
             <Mini label="p-value" value={formatPValue(finding.p_value)} />
             <Mini label="Method" value={finding.method} />
@@ -141,7 +148,7 @@ function LiveCorrelationCard({
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Bar dataKey="value" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="value" fill={finding.strength < 0 ? "#f97316" : "#8b5cf6"} radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -16,7 +16,7 @@ from health_engine.models import (
 class AnalyzeRequest(BaseModel):
     use_synthetic: bool = False
     seed: int = 42
-    n_days: int = 180
+    n_days: int = 365
     user_id: str = "user_demo"
     bundle: Optional[TimeSeriesBundle] = None
     max_lag: int = 7
@@ -31,7 +31,7 @@ class AnalyzeResponse(BaseModel):
 
 class EvaluateRequest(BaseModel):
     seed: int = 42
-    n_days: int = 180
+    n_days: int = 365
     contamination: float = 0.05
 
 
@@ -56,7 +56,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: List[ChatMessage]
     seed: int = 42
-    n_days: int = 180
+    n_days: int = 365
     contamination: float = 0.05
     include_evaluation: bool = True
 

@@ -30,7 +30,7 @@ def _to_dt(d: date, hour: int = 8) -> datetime:
 def generate_synthetic(
     *,
     user_id: str = "user_demo",
-    n_days: int = 180,
+    n_days: int = 365,
     seed: int = 42,
     start: Optional[date] = None,
     missing_rate: float = 0.05,
@@ -40,13 +40,21 @@ def generate_synthetic(
 
     Planted correlations
     --------------------
-    1. sleep_duration[t]  <->  resting_hr[t]     (negative, lag 0)
-    2. workout_minutes[t] -> sleep_duration[t+1] (positive, lag 1)
-    3. steps[t]           <->  hrv[t]            (positive, lag 0)
+    1. sleep_duration[t]           <->  resting_hr[t]              (negative, lag 0)
+    2. workout_minutes[t]          ->   sleep_duration[t+1]        (positive, lag 1)
+    3. steps[t]                    <->  hrv[t]                     (positive, lag 0)
+    4. caffeine[t]                 ->   sleep_duration[t+1]        (negative, lag 1)
+    5. screen_time_before_bed[t]   ->   hrv[t+2]                   (negative, lag 2)
+    6. alcohol_units[t]            ->   sleep_duration[t+1]        (negative, lag 1)
+    7. outdoor_minutes[t]          ->   sleep_duration[t+1]        (positive, lag 1)
 
-    Planted pattern
-    ---------------
-    Afternoon workouts (workout_hour >= 14) associate with better next-night sleep.
+    Planted patterns
+    ----------------
+    Afternoon workouts associate with better next-night sleep.
+    High caffeine days associate with shorter next-night sleep.
+    High pre-bed screen time associates with lower HRV two days later.
+    Alcohol evenings associate with shorter next-night sleep.
+    Low outdoor exposure associates with shorter next-night sleep.
 
     Planted anomalies
     -----------------
@@ -60,13 +68,46 @@ def generate_synthetic(
 
     # Base signals with weekly periodicity (7-day)
     weekly = np.sin(2 * np.pi * t / 7.0)
+    is_weekend = np.array([d.weekday() >= 5 for d in days])
+
+    # --- Lifestyle drivers (non-obvious features) ---
+    # Pre-bed screen time: higher on stressful weekdays, occasional binge nights
+    screen_time_before_bed = np.clip(
+        35 + 15 * weekly + rng.normal(0, 12, n_days) + (~is_weekend).astype(float) * 8,
+        5,
+        120,
+    )
+    binge_screen = rng.random(n_days) < 0.12
+    screen_time_before_bed = np.where(
+        binge_screen, screen_time_before_bed + rng.uniform(25, 55, n_days), screen_time_before_bed
+    )
+    screen_time_before_bed = np.clip(screen_time_before_bed, 5, 150)
+
+    # Alcohol: mostly zero; weekend social drinking (confounds naive daily averages)
+    alcohol_units = np.zeros(n_days)
+    for i, d in enumerate(days):
+        if d.weekday() in (4, 5):  # Fri/Sat
+            if rng.random() < 0.42:
+                alcohol_units[i] = float(rng.uniform(0.5, 3.0))
+        elif rng.random() < 0.06:
+            alcohol_units[i] = float(rng.uniform(0.5, 1.5))
+
+    # Outdoor / daylight exposure: weekend hikes + seasonal drift
+    seasonal = np.sin(2 * np.pi * t / 365.0)
+    outdoor_minutes = np.clip(
+        25
+        + 20 * weekly
+        + 15 * seasonal
+        + is_weekend.astype(float) * 18
+        + rng.normal(0, 12, n_days),
+        0,
+        180,
+    )
 
     # --- Core drivers ---
-    # Workout minutes: higher on some weekdays, afternoon bias planted later
     workout_minutes = np.clip(
         25 + 20 * weekly + rng.normal(0, 12, n_days), 0, 120
     )
-    # Afternoon vs morning: ~55% afternoon on workout days
     is_workout = workout_minutes > 15
     workout_hour = np.where(
         is_workout,
@@ -74,33 +115,52 @@ def generate_synthetic(
         np.nan,
     )
 
-    # Steps correlated with workout + noise
     steps = np.clip(
         7000 + 40 * workout_minutes + 800 * weekly + rng.normal(0, 900, n_days),
         1500,
         25000,
     )
 
-    # Sleep: base + lag-1 effect from workout + afternoon bonus + noise
+    is_monday = np.array([d.weekday() == 0 for d in days])
+    caffeine = np.clip(
+        130 + rng.normal(0, 55, n_days) + is_monday * 60,
+        0,
+        500,
+    )
+    late_mask = rng.random(n_days) < 0.28
+    caffeine = np.where(late_mask, caffeine + rng.uniform(80, 180, n_days), caffeine)
+    caffeine = np.clip(caffeine, 0, 550)
+
     sleep = 7.0 + 0.25 * weekly + rng.normal(0, 0.35, n_days)
-    sleep[1:] += 0.012 * workout_minutes[:-1]  # planted lag-1 positive
-    # Afternoon workout → better next-night sleep (~+0.7h)
+    sleep[1:] += 0.012 * workout_minutes[:-1]
+    for i in range(n_days - 1):
+        # Planted: alcohol → shorter sleep next night
+        if alcohol_units[i] > 0.4:
+            sleep[i + 1] -= 0.28 * alcohol_units[i]
+        # Planted: more daylight → better sleep next night (circadian entrainment)
+        sleep[i + 1] += 0.006 * max(outdoor_minutes[i] - 25, 0)
+
     afternoon = (workout_hour >= 14) & is_workout
     for i in range(n_days - 1):
         if afternoon[i]:
             sleep[i + 1] += 0.7
+    # Planted: caffeine → shorter sleep next night (applied after other drivers)
+    for i in range(n_days - 1):
+        sleep[i + 1] -= 0.35 * (caffeine[i] / 100.0)
     sleep = np.clip(sleep, 4.0, 10.0)
 
-    # Resting HR: inversely related to sleep (lag 0) + noise
     resting_hr = 62 - 2.2 * (sleep - 7.0) + rng.normal(0, 1.8, n_days)
     resting_hr = np.clip(resting_hr, 45, 95)
 
-    # HRV: positively related to steps (lag 0) and sleep
     hrv = 45 + 0.0015 * (steps - 7000) + 3.0 * (sleep - 7.0) + rng.normal(0, 4.0, n_days)
+    # Planted lag-2: heavy pre-bed screen time depresses HRV two days later
+    for i in range(2, n_days):
+        excess = max(screen_time_before_bed[i - 2] - 35, 0)
+        if excess > 0:
+            hrv[i] -= 0.18 * excess
     hrv = np.clip(hrv, 15, 120)
 
     # --- Plant multivariate anomalies ---
-    # Pick days in the latter half so baselines are established
     start_i = min(max(14, n_days // 3), max(n_days - 5, 0))
     end_i = max(n_days - 2, start_i + 1)
     candidate_idx = list(range(start_i, end_i))
@@ -113,11 +173,9 @@ def generate_synthetic(
     else:
         anom_idx = []
     for i in anom_idx:
-        # Joint rare combo: short sleep + elevated HR + depressed HRV
         sleep[i] = float(rng.uniform(4.2, 5.0))
         resting_hr[i] = float(rng.uniform(78, 88))
         hrv[i] = float(rng.uniform(18, 28))
-        # Keep workout/steps near normal so univariate thresholds alone are weak
         planted_anomalies.append(
             PlantedAnomaly(
                 day=days[i],
@@ -137,13 +195,16 @@ def generate_synthetic(
             keep_v.append(float(v))
         return keep_t, keep_v
 
-    # Slightly different observation times to simulate fragmentation
     sleep_ts = [_to_dt(d, 7) for d in days]
     hr_ts = [_to_dt(d, 9) for d in days]
     workout_ts = [_to_dt(d, 18) for d in days]
     hour_ts = [_to_dt(d, 18) for d in days]
     steps_ts = [_to_dt(d, 22) for d in days]
     hrv_ts = [_to_dt(d, 8) for d in days]
+    caffeine_ts = [_to_dt(d, 20) for d in days]
+    screen_ts = [_to_dt(d, 23) for d in days]
+    alcohol_ts = [_to_dt(d, 21) for d in days]
+    outdoor_ts = [_to_dt(d, 17) for d in days]
 
     series_list: List[MetricSeries] = []
     for name, vals, tss in [
@@ -153,6 +214,10 @@ def generate_synthetic(
         (MetricName.WORKOUT_HOUR, workout_hour, hour_ts),
         (MetricName.STEPS, steps, steps_ts),
         (MetricName.HRV, hrv, hrv_ts),
+        (MetricName.CAFFEINE, caffeine, caffeine_ts),
+        (MetricName.SCREEN_TIME_BEFORE_BED, screen_time_before_bed, screen_ts),
+        (MetricName.ALCOHOL_UNITS, alcohol_units, alcohol_ts),
+        (MetricName.OUTDOOR_MINUTES, outdoor_minutes, outdoor_ts),
     ]:
         kt, kv = maybe_drop(vals, tss)
         series_list.append(
@@ -179,6 +244,30 @@ def generate_synthetic(
                 lag_days=0,
                 strength=0.35,
             ),
+            PlantedCorrelation(
+                metric_a=MetricName.CAFFEINE,
+                metric_b=MetricName.SLEEP_DURATION,
+                lag_days=1,
+                strength=-0.35,
+            ),
+            PlantedCorrelation(
+                metric_a=MetricName.SCREEN_TIME_BEFORE_BED,
+                metric_b=MetricName.HRV,
+                lag_days=2,
+                strength=-0.3,
+            ),
+            PlantedCorrelation(
+                metric_a=MetricName.ALCOHOL_UNITS,
+                metric_b=MetricName.SLEEP_DURATION,
+                lag_days=1,
+                strength=-0.32,
+            ),
+            PlantedCorrelation(
+                metric_a=MetricName.OUTDOOR_MINUTES,
+                metric_b=MetricName.SLEEP_DURATION,
+                lag_days=1,
+                strength=0.28,
+            ),
         ],
         anomalies=planted_anomalies,
         patterns=[
@@ -186,6 +275,26 @@ def generate_synthetic(
                 condition="afternoon_workout",
                 outcome="sleep_duration",
                 effect_direction="positive",
+            ),
+            PlantedPattern(
+                condition="high_caffeine",
+                outcome="sleep_duration",
+                effect_direction="negative",
+            ),
+            PlantedPattern(
+                condition="high_screen_time",
+                outcome="hrv",
+                effect_direction="negative",
+            ),
+            PlantedPattern(
+                condition="alcohol_evening",
+                outcome="sleep_duration",
+                effect_direction="negative",
+            ),
+            PlantedPattern(
+                condition="low_outdoor",
+                outcome="sleep_duration",
+                effect_direction="negative",
             ),
         ],
     )

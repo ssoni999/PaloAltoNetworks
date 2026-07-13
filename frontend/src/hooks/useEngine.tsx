@@ -31,7 +31,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const result = await analyzeSynthetic({ seed: 42, n_days: 180 });
+      const result = await analyzeSynthetic({ seed: 42, n_days: 365 });
       setAnalysis(result);
     } catch (err) {
       setError(
@@ -49,7 +49,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const result = await evaluateSynthetic({ seed: 42, n_days: 180 });
+      const result = await evaluateSynthetic({ seed: 42, n_days: 365 });
       setEvaluation(result);
     } catch (err) {
       setError(

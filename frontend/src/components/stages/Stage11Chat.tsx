@@ -66,7 +66,7 @@ export function Stage11Chat({ onBack, onRestart, onDashboard }: Props) {
 
   return (
     <StorySection
-      stageNumber={12}
+      stageNumber={11}
       title="Ask Emily's Health Advisor"
       subtitle="An LLM grounded in live engine output — correlations, anomalies, and ranked insights from her data."
     >

@@ -11,6 +11,10 @@ const SOURCES = [
   { name: "Workouts", color: "bg-amber-400", key: "workout_minutes" },
   { name: "Workout hour", color: "bg-orange-400", key: "workout_hour" },
   { name: "HRV", color: "bg-violet-400", key: "hrv" },
+  { name: "Caffeine", color: "bg-yellow-500", key: "caffeine" },
+  { name: "Screen", color: "bg-sky-400", key: "screen_time_before_bed" },
+  { name: "Alcohol", color: "bg-pink-400", key: "alcohol_units" },
+  { name: "Outdoor", color: "bg-lime-500", key: "outdoor_minutes" },
 ];
 
 export function Stage02ConnectData() {
@@ -28,7 +32,7 @@ export function Stage02ConnectData() {
       <ApiStatusBanner loading={loading} error={error} meta={analysis?.meta} />
 
       <div className="relative flex min-h-[280px] flex-col items-center justify-center rounded-2xl bg-gradient-to-b from-slate-50 to-white p-8">
-        <div className="grid w-full max-w-lg grid-cols-3 gap-4 sm:grid-cols-3">
+        <div className="grid w-full max-w-2xl grid-cols-5 gap-3 sm:grid-cols-5">
           {SOURCES.map((s, i) => (
             <motion.div
               key={s.name}

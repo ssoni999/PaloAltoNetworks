@@ -2,6 +2,7 @@
 
 from health_engine.correlation.lagged import (
     benjamini_hochberg,
+    discover_directed_lagged_correlations,
     discover_lagged_correlations,
     lagged_cross_correlation,
 )
@@ -14,6 +15,7 @@ from health_engine.correlation.multivariate import (
 __all__ = [
     "benjamini_hochberg",
     "discover_lagged_correlations",
+    "discover_directed_lagged_correlations",
     "lagged_cross_correlation",
     "discover_partial_correlations",
     "granger_soft_evidence",

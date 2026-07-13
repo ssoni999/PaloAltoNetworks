@@ -17,7 +17,11 @@ ACTIONABLE_PAIRS = {
     frozenset({"workout_minutes", "sleep_duration"}),
     frozenset({"steps", "hrv"}),
     frozenset({"sleep_duration", "hrv"}),
+    frozenset({"caffeine", "sleep_duration"}),
     frozenset({"workout_minutes", "resting_hr"}),
+    frozenset({"screen_time_before_bed", "hrv"}),
+    frozenset({"alcohol_units", "sleep_duration"}),
+    frozenset({"outdoor_minutes", "sleep_duration"}),
 }
 
 
@@ -78,6 +82,10 @@ def _pattern_insight(p: PatternFinding) -> Insight:
         "afternoon_workout": "Afternoon workouts (after 2pm)",
         "high_steps": "High-step days",
         "short_sleep": "Short-sleep nights",
+        "high_caffeine": "High-caffeine days",
+        "high_screen_time": "High pre-bed screen time",
+        "alcohol_evening": "Alcohol evenings",
+        "low_outdoor": "Low outdoor exposure",
     }
     cond = friendly.get(p.condition, p.condition)
     text = (
@@ -89,6 +97,12 @@ def _pattern_insight(p: PatternFinding) -> Insight:
     # Boost the flagship wellness insight
     if p.condition == "afternoon_workout":
         score *= 1.3
+    if p.condition == "high_caffeine":
+        score *= 1.15
+    if p.condition == "high_screen_time":
+        score *= 1.12
+    if p.condition == "alcohol_evening":
+        score *= 1.1
     return Insight(
         text=text,
         score=float(score),

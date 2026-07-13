@@ -9,8 +9,7 @@ export const STORY_STAGES = [
   { id: 7, label: "Recommend Next Steps", short: "Actions" },
   { id: 8, label: "Technical Engine", short: "Engine" },
   { id: 9, label: "Evaluation Results", short: "Results" },
-  { id: 10, label: "Conclusion", short: "End" },
-  { id: 11, label: "Health Advisor", short: "Chat" },
+  { id: 10, label: "Health Advisor", short: "Chat" },
 ] as const;
 
 export type StoryStageId = (typeof STORY_STAGES)[number]["id"];

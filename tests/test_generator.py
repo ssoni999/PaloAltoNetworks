@@ -11,7 +11,11 @@ def test_generator_produces_all_metrics():
     assert MetricName.RESTING_HR in names
     assert MetricName.WORKOUT_MINUTES in names
     assert MetricName.HRV in names
-    assert len(ds.ground_truth.correlations) >= 3
+    assert MetricName.CAFFEINE in names
+    assert MetricName.SCREEN_TIME_BEFORE_BED in names
+    assert MetricName.ALCOHOL_UNITS in names
+    assert MetricName.OUTDOOR_MINUTES in names
+    assert len(ds.ground_truth.correlations) >= 7
     assert len(ds.ground_truth.anomalies) >= 2
     assert any(p.condition == "afternoon_workout" for p in ds.ground_truth.patterns)
 

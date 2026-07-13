@@ -407,15 +407,16 @@ export function getAnomalyTimelineData() {
 }
 
 export function getDashboardCorrelationMatrix() {
-  const metrics = ["Sleep", "RHR", "Steps", "Stress", "Caffeine", "Energy"];
+  const metrics = ["Sleep", "RHR", "Steps", "Stress", "Caffeine", "Energy", "Workout"];
   const matrix: { x: string; y: string; value: number }[] = [];
   const vals = [
-    [1, -0.62, 0.18, -0.35, -0.28, 0.52],
-    [-0.62, 1, -0.12, 0.41, 0.22, -0.48],
-    [0.18, -0.12, 1, -0.25, -0.08, 0.35],
-    [-0.35, 0.41, -0.25, 1, 0.38, -0.55],
-    [-0.28, 0.22, -0.08, 0.38, 1, -0.42],
-    [0.52, -0.48, 0.35, -0.55, -0.42, 1],
+    [1, -0.62, 0.18, -0.35, -0.28, 0.52, -0.38],
+    [-0.62, 1, -0.12, 0.41, 0.22, -0.48, 0.15],
+    [0.18, -0.12, 1, -0.25, -0.08, 0.35, -0.12],
+    [-0.35, 0.41, -0.25, 1, 0.38, -0.55, 0.20],
+    [-0.28, 0.22, -0.08, 0.38, 1, -0.42, 0.45],
+    [0.52, -0.48, 0.35, -0.55, -0.42, 1, -0.32],
+    [-0.38, 0.15, -0.12, 0.20, 0.45, -0.32, 1],
   ];
   metrics.forEach((x, i) =>
     metrics.forEach((y, j) => matrix.push({ x, y, value: vals[i][j] })),

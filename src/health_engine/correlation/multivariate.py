@@ -12,6 +12,8 @@ from scipy import stats
 
 from health_engine.models import CorrelationFinding, MetricName
 
+from health_engine.correlation.lagged import _signed_lagged_pearson
+
 try:
     from statsmodels.tsa.stattools import grangercausalitytests
 except ImportError:  # pragma: no cover
@@ -121,25 +123,30 @@ def granger_soft_evidence(
 
     best_lag = None
     best_p = 1.0
-    best_f = 0.0
+    best_r = 0.0
     for lag, res in results.items():
+        lag_i = int(lag)
+        if lag_i < 1:
+            continue
         # ssr_ftest: (F, p, df_denom, df_num)
         f_stat, p_val, _, _ = res[0]["ssr_ftest"]
-        if p_val < best_p:
+        signed = _signed_lagged_pearson(frame, cause, effect, lag_i)
+        if signed is None:
+            continue
+        r, _ = signed
+        if p_val < alpha and abs(r) >= abs(best_r):
             best_p = float(p_val)
-            best_lag = int(lag)
-            best_f = float(f_stat)
+            best_lag = lag_i
+            best_r = float(r)
 
     if best_lag is None or best_p >= alpha:
         return None
 
-    # Map F loosely into a bounded "strength" for ranking
-    strength = float(np.tanh(best_f / 10.0))
     return CorrelationFinding(
         metric_a=MetricName(cause),
         metric_b=MetricName(effect),
         lag_days=best_lag,
-        strength=strength,
+        strength=best_r,
         p_value=best_p,
         method="granger",
         partial=False,
@@ -158,8 +165,12 @@ def discover_directed_links(
     defaults = [
         ("workout_minutes", "sleep_duration"),
         ("sleep_duration", "resting_hr"),
+        ("caffeine", "sleep_duration"),
         ("steps", "hrv"),
         ("workout_minutes", "resting_hr"),
+        ("screen_time_before_bed", "hrv"),
+        ("alcohol_units", "sleep_duration"),
+        ("outdoor_minutes", "sleep_duration"),
     ]
     pairs = list(candidate_pairs or defaults)
     out: List[CorrelationFinding] = []

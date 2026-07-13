@@ -61,6 +61,10 @@ export function DashboardView({ onBackToStory }: DashboardViewProps) {
     "steps",
     "hrv",
     "workout_minutes",
+    "caffeine",
+    "screen_time_before_bed",
+    "alcohol_units",
+    "outdoor_minutes",
   ];
 
   function cellCorr(a: string, b: string): number {
@@ -117,7 +121,8 @@ export function DashboardView({ onBackToStory }: DashboardViewProps) {
             >
               <option value={30}>Last 30 days</option>
               <option value={90}>Last 90 days</option>
-              <option value={180}>Full window</option>
+              <option value={180}>Last 6 months</option>
+              <option value={365}>Full year</option>
             </select>
           </div>
           <div>

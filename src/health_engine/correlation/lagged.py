@@ -74,6 +74,87 @@ def best_lagged_correlation(
     return max(results, key=lambda t: abs(t[1]))
 
 
+def _signed_lagged_pearson(
+    frame: pd.DataFrame,
+    cause: str,
+    effect: str,
+    lag: int,
+) -> Optional[tuple]:
+    """Pearson r for cause[t] vs effect[t+lag] (positive lag = cause leads effect)."""
+    if cause not in frame.columns or effect not in frame.columns:
+        return None
+    sub = frame[[cause, effect]].dropna()
+    if len(sub) < 12:
+        return None
+    x = sub[cause].values
+    y = sub[effect].values
+    if lag > 0:
+        a, b = x[:-lag], y[lag:]
+    elif lag < 0:
+        k = -lag
+        a, b = x[k:], y[:-k]
+    else:
+        a, b = x, y
+    if len(a) < 8:
+        return None
+    r, p = stats.pearsonr(a, b)
+    if np.isnan(r):
+        return None
+    return float(r), float(p)
+
+
+def discover_directed_lagged_correlations(
+    frame: pd.DataFrame,
+    candidate_pairs: Optional[Sequence[tuple]] = None,
+    *,
+    max_lag: int = 7,
+    method: str = "pearson",
+    alpha: float = 0.05,
+    min_abs_r: float = 0.12,
+) -> List[CorrelationFinding]:
+    """Best positive-lag correlation for directed cause → effect pairs."""
+    defaults = [
+        ("workout_minutes", "sleep_duration"),
+        ("sleep_duration", "resting_hr"),
+        ("caffeine", "sleep_duration"),
+        ("steps", "hrv"),
+        ("screen_time_before_bed", "hrv"),
+        ("alcohol_units", "sleep_duration"),
+        ("outdoor_minutes", "sleep_duration"),
+    ]
+    pairs = list(candidate_pairs or defaults)
+    findings: List[CorrelationFinding] = []
+
+    for cause, effect in pairs:
+        if cause not in frame.columns or effect not in frame.columns:
+            continue
+        results = lagged_cross_correlation(
+            frame[cause], frame[effect], max_lag=max_lag, method=method
+        )
+        forward = [(lag, r, p) for lag, r, p in results if lag > 0]
+        if not forward:
+            continue
+        lag, r, p = max(forward, key=lambda t: abs(t[1]))
+        if abs(r) < min_abs_r:
+            continue
+        findings.append(
+            CorrelationFinding(
+                metric_a=MetricName(cause),
+                metric_b=MetricName(effect),
+                lag_days=int(lag),
+                strength=float(r),
+                p_value=float(p),
+                method=f"directed_{method}",
+                partial=False,
+                directed=True,
+                significant=bool(p < alpha),
+            )
+        )
+
+    findings.sort(key=lambda f: abs(f.strength), reverse=True)
+    return findings
+
+
 def benjamini_hochberg(p_values: Sequence[float], alpha: float = 0.05) -> List[bool]:
     """FDR correction; returns significance mask aligned to input order."""
     n = len(p_values)

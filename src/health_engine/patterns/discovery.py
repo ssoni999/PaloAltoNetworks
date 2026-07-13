@@ -82,6 +82,112 @@ def high_steps_hrv_pattern(frame: pd.DataFrame) -> Optional[PatternFinding]:
     )
 
 
+def high_caffeine_sleep_pattern(frame: pd.DataFrame) -> Optional[PatternFinding]:
+    """High caffeine days associate with shorter next-night sleep."""
+    need = {"caffeine", "sleep_duration"}
+    if not need.issubset(frame.columns):
+        return None
+    caffeine = frame["caffeine"]
+    thresh = caffeine.quantile(0.75)
+    high = caffeine >= thresh
+    low = caffeine <= caffeine.quantile(0.35)
+    next_sleep = frame["sleep_duration"].shift(-1)
+    a = next_sleep[high].dropna().values
+    b = next_sleep[low].dropna().values
+    if len(a) < 8 or len(b) < 8:
+        return None
+    d = _cohens_d(a, b)
+    _, p = stats.ttest_ind(a, b, equal_var=False)
+    return PatternFinding(
+        condition="high_caffeine",
+        outcome="sleep_duration",
+        period_hint_days=7.0,
+        effect_size=float(d),
+        support=int(len(a)),
+        p_value=float(p),
+        significant=bool(p < 0.05 and abs(d) > 0.2),
+    )
+
+
+def high_screen_time_hrv_pattern(frame: pd.DataFrame) -> Optional[PatternFinding]:
+    """Heavy pre-bed screen time associates with lower HRV ~2 days later."""
+    need = {"screen_time_before_bed", "hrv"}
+    if not need.issubset(frame.columns):
+        return None
+    screen = frame["screen_time_before_bed"]
+    thresh = screen.quantile(0.75)
+    high = screen >= thresh
+    low = screen <= screen.quantile(0.35)
+    delayed_hrv = frame["hrv"].shift(-2)
+    a = delayed_hrv[high].dropna().values
+    b = delayed_hrv[low].dropna().values
+    if len(a) < 8 or len(b) < 8:
+        return None
+    d = _cohens_d(a, b)
+    _, p = stats.ttest_ind(a, b, equal_var=False)
+    return PatternFinding(
+        condition="high_screen_time",
+        outcome="hrv",
+        period_hint_days=7.0,
+        effect_size=float(d),
+        support=int(len(a)),
+        p_value=float(p),
+        significant=bool(p < 0.05 and abs(d) > 0.2),
+    )
+
+
+def alcohol_sleep_pattern(frame: pd.DataFrame) -> Optional[PatternFinding]:
+    """Evenings with alcohol associate with shorter next-night sleep."""
+    need = {"alcohol_units", "sleep_duration"}
+    if not need.issubset(frame.columns):
+        return None
+    alcohol = frame["alcohol_units"].fillna(0)
+    drink_days = alcohol >= 0.5
+    sober = alcohol <= 0.1
+    next_sleep = frame["sleep_duration"].shift(-1)
+    a = next_sleep[drink_days].dropna().values
+    b = next_sleep[sober].dropna().values
+    if len(a) < 6 or len(b) < 8:
+        return None
+    d = _cohens_d(a, b)
+    _, p = stats.ttest_ind(a, b, equal_var=False)
+    return PatternFinding(
+        condition="alcohol_evening",
+        outcome="sleep_duration",
+        period_hint_days=7.0,
+        effect_size=float(d),
+        support=int(len(a)),
+        p_value=float(p),
+        significant=bool(p < 0.05 and abs(d) > 0.2),
+    )
+
+
+def low_outdoor_sleep_pattern(frame: pd.DataFrame) -> Optional[PatternFinding]:
+    """Low outdoor exposure associates with shorter next-night sleep."""
+    need = {"outdoor_minutes", "sleep_duration"}
+    if not need.issubset(frame.columns):
+        return None
+    outdoor = frame["outdoor_minutes"]
+    low = outdoor <= outdoor.quantile(0.3)
+    high = outdoor >= outdoor.quantile(0.7)
+    next_sleep = frame["sleep_duration"].shift(-1)
+    a = next_sleep[low].dropna().values
+    b = next_sleep[high].dropna().values
+    if len(a) < 8 or len(b) < 8:
+        return None
+    d = _cohens_d(a, b)
+    _, p = stats.ttest_ind(a, b, equal_var=False)
+    return PatternFinding(
+        condition="low_outdoor",
+        outcome="sleep_duration",
+        period_hint_days=None,
+        effect_size=float(-d),
+        support=int(len(a)),
+        p_value=float(p),
+        significant=bool(p < 0.05 and abs(d) > 0.2),
+    )
+
+
 def sleep_resting_hr_pattern(frame: pd.DataFrame) -> Optional[PatternFinding]:
     """Short sleep nights associate with higher next-morning resting HR."""
     if "sleep_duration" not in frame.columns or "resting_hr" not in frame.columns:
@@ -112,6 +218,10 @@ def discover_patterns(frame: pd.DataFrame) -> List[PatternFinding]:
     findings: List[PatternFinding] = []
     for fn in (
         afternoon_workout_sleep_pattern,
+        high_caffeine_sleep_pattern,
+        high_screen_time_hrv_pattern,
+        alcohol_sleep_pattern,
+        low_outdoor_sleep_pattern,
         high_steps_hrv_pattern,
         sleep_resting_hr_pattern,
     ):

@@ -7,7 +7,7 @@ from health_engine.pipeline import run_synthetic_evaluation
 
 
 def test_eval_meets_success_thresholds():
-    _ds, result, metrics = run_synthetic_evaluation(seed=42, n_days=180)
+    _ds, result, metrics = run_synthetic_evaluation(seed=42, n_days=365)
     assert metrics.anomaly_f1 >= 0.5
     assert metrics.correlation_recovery >= 0.8
     assert metrics.insight_precision_at_k >= 0.4

@@ -41,7 +41,7 @@ Example analyze request:
 ```bash
 curl -X POST http://127.0.0.1:8000/v1/analyze \
   -H 'Content-Type: application/json' \
-  -d '{"use_synthetic": true, "seed": 42, "n_days": 180}'
+  -d '{"use_synthetic": true, "seed": 42, "n_days": 365}'
 ```
 
 ## Success metrics
@@ -96,7 +96,7 @@ Open **http://127.0.0.1:8000**
 
 ### Story stages
 
-1. Meet Emily → … → 10. Evaluation Results → 11. Conclusion → 12. **Health Advisor Chat**
+1. Meet Emily → … → 10. Evaluation Results → 11. **Health Advisor Chat**
 
 Technical stages show formulas, z-scores, feature vectors, IF/Mahalanobis thresholds, and FDR-corrected correlations from the API response (`result.diagnostics`, `result.daily_series`).
 

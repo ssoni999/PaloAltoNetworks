@@ -13,7 +13,7 @@ def main(argv: list | None = None) -> int:
         description="Evaluate Health & Wellness Correlation Engine on synthetic data"
     )
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--n-days", type=int, default=180)
+    parser.add_argument("--n-days", type=int, default=365)
     parser.add_argument("--contamination", type=float, default=0.05)
     parser.add_argument("--json", action="store_true", help="Emit JSON only")
     args = parser.parse_args(argv)

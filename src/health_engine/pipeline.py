@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from health_engine.anomaly import detect_anomalies_with_diagnostics
 from health_engine.correlation import (
     discover_directed_links,
+    discover_directed_lagged_correlations,
     discover_lagged_correlations,
     discover_partial_correlations,
 )
@@ -47,10 +48,11 @@ def analyze_bundle(
 
     lagged = discover_lagged_correlations(frame, max_lag=max_lag)
     partial = discover_partial_correlations(frame)
+    directed_lagged = discover_directed_lagged_correlations(frame, max_lag=max_lag)
     directed = discover_directed_links(frame, max_lag=min(3, max_lag))
 
     # Merge correlations: prefer lagged for ranking, keep partial/directed as extras
-    merged = _merge_correlations(lagged, partial, directed)
+    merged = _merge_correlations(lagged, partial, directed, directed_lagged)
     anomalies, diagnostics = detect_anomalies_with_diagnostics(
         frame, contamination=contamination
     )
@@ -93,6 +95,7 @@ def _merge_correlations(
     lagged: List[CorrelationFinding],
     partial: List[CorrelationFinding],
     directed: List[CorrelationFinding],
+    directed_lagged: Optional[List[CorrelationFinding]] = None,
 ) -> List[CorrelationFinding]:
     by_pair: Dict[frozenset, CorrelationFinding] = {}
     for f in lagged:
@@ -106,6 +109,8 @@ def _merge_correlations(
             # Keep lagged primary; still append partial later
             pass
     out = list(by_pair.values())
+    # Directed lag scans (cause → effect, positive lag only)
+    out.extend(directed_lagged or [])
     # Always include directed soft evidence as separate entries
     out.extend(directed)
     # Also include significant partials as annotated copies when different method
@@ -218,7 +223,7 @@ def _find_correlation_match(
         f
         for f in findings
         if _pair_key(f.metric_a, f.metric_b) == target
-        and f.method in ("pearson", "spearman", "partial_pearson")
+        and f.method in ("pearson", "spearman", "partial_pearson", "directed_pearson")
     ]
     if not candidates:
         return None
@@ -244,6 +249,10 @@ def _is_planted_pair(finding: CorrelationFinding, gt: GroundTruth) -> bool:
         frozenset({"sleep_duration", "hrv"}),
         frozenset({"workout_hour", "sleep_duration"}),
         frozenset({"workout_minutes", "hrv"}),
+        frozenset({"caffeine", "sleep_duration"}),
+        frozenset({"screen_time_before_bed", "hrv"}),
+        frozenset({"alcohol_units", "sleep_duration"}),
+        frozenset({"outdoor_minutes", "sleep_duration"}),
     }
     return key in related
 
@@ -258,6 +267,26 @@ def _insight_matches_truth(insight: Insight, gt: GroundTruth) -> bool:
             if insight.kind == "pattern" and evidence.get("condition") == "afternoon_workout":
                 return True
             if "afternoon" in text and "sleep" in text:
+                return True
+        if p.condition == "high_caffeine":
+            if insight.kind == "pattern" and evidence.get("condition") == "high_caffeine":
+                return True
+            if "caffeine" in text and "sleep" in text:
+                return True
+        if p.condition == "high_screen_time":
+            if insight.kind == "pattern" and evidence.get("condition") == "high_screen_time":
+                return True
+            if "screen" in text and "hrv" in text:
+                return True
+        if p.condition == "alcohol_evening":
+            if insight.kind == "pattern" and evidence.get("condition") == "alcohol_evening":
+                return True
+            if "alcohol" in text and "sleep" in text:
+                return True
+        if p.condition == "low_outdoor":
+            if insight.kind == "pattern" and evidence.get("condition") == "low_outdoor":
+                return True
+            if "outdoor" in text and "sleep" in text:
                 return True
 
     # Correlations
@@ -287,7 +316,7 @@ def _insight_matches_truth(insight: Insight, gt: GroundTruth) -> bool:
 def run_synthetic_evaluation(
     *,
     seed: int = 42,
-    n_days: int = 180,
+    n_days: int = 365,
     contamination: float = 0.05,
 ) -> Tuple[SyntheticDataset, AnalysisResult, EvalMetrics]:
     """Generate synthetic data, analyze, and score."""

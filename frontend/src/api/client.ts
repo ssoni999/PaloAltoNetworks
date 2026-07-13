@@ -28,7 +28,7 @@ export function analyzeSynthetic(options?: {
     body: JSON.stringify({
       use_synthetic: true,
       seed: options?.seed ?? 42,
-      n_days: options?.n_days ?? 180,
+      n_days: options?.n_days ?? 365,
       user_id: "emily_demo",
       max_lag: options?.max_lag ?? 7,
       contamination: options?.contamination ?? 0.05,
@@ -46,7 +46,7 @@ export function evaluateSynthetic(options?: {
     method: "POST",
     body: JSON.stringify({
       seed: options?.seed ?? 42,
-      n_days: options?.n_days ?? 180,
+      n_days: options?.n_days ?? 365,
       contamination: options?.contamination ?? 0.05,
     }),
   });
@@ -65,7 +65,7 @@ export function sendChatMessage(
     body: JSON.stringify({
       messages,
       seed: options?.seed ?? 42,
-      n_days: options?.n_days ?? 180,
+      n_days: options?.n_days ?? 365,
       include_evaluation: options?.include_evaluation ?? true,
     }),
   });

@@ -39,6 +39,10 @@ AGG_BY_METRIC: Dict[MetricName, str] = {
     MetricName.WORKOUT_HOUR: "last",
     MetricName.STEPS: "sum",
     MetricName.HRV: "mean",
+    MetricName.CAFFEINE: "sum",
+    MetricName.SCREEN_TIME_BEFORE_BED: "mean",
+    MetricName.ALCOHOL_UNITS: "sum",
+    MetricName.OUTDOOR_MINUTES: "sum",
 }
 
 

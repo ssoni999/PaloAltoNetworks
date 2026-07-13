@@ -16,6 +16,10 @@ class MetricName(str, Enum):
     WORKOUT_HOUR = "workout_hour"
     STEPS = "steps"
     HRV = "hrv"
+    CAFFEINE = "caffeine"
+    SCREEN_TIME_BEFORE_BED = "screen_time_before_bed"
+    ALCOHOL_UNITS = "alcohol_units"
+    OUTDOOR_MINUTES = "outdoor_minutes"
 
 
 METRIC_UNITS: Dict[MetricName, str] = {
@@ -25,6 +29,10 @@ METRIC_UNITS: Dict[MetricName, str] = {
     MetricName.WORKOUT_HOUR: "hour_of_day",
     MetricName.STEPS: "count",
     MetricName.HRV: "ms",
+    MetricName.CAFFEINE: "mg",
+    MetricName.SCREEN_TIME_BEFORE_BED: "minutes",
+    MetricName.ALCOHOL_UNITS: "drinks",
+    MetricName.OUTDOOR_MINUTES: "minutes",
 }
 
 

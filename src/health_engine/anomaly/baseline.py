@@ -16,6 +16,7 @@ CORE_METRICS: List[str] = [
     "hrv",
     "workout_minutes",
     "steps",
+    "caffeine",
 ]
 
 
@@ -49,6 +50,10 @@ def build_baseline_features(
         features["sleep_hrv_interaction"] = (
             features["sleep_duration_z"] * (-features["hrv_z"])
         )
+    if "sleep_duration_z" in features.columns and "caffeine_z" in features.columns:
+        features["sleep_caffeine_interaction"] = (
+            features["sleep_duration_z"] * features["caffeine_z"]
+        )
 
     return features
 
@@ -71,3 +76,4 @@ def univariate_in_range(
     if row.isna().all():
         return True
     return bool(((row.abs() <= z_thresh) | row.isna()).all())
+
