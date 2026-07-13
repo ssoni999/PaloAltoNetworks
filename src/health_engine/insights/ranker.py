@@ -72,7 +72,11 @@ def _anomaly_insight(e: AnomalyEvent) -> Insight:
 
 
 def _pattern_insight(p: PatternFinding) -> Insight:
-    direction = "higher" if p.effect_size > 0 else "lower"
+    if p.condition == "low_outdoor":
+        # effect_size is stored as -Cohen's d (low vs high outdoor → sleep)
+        direction = "lower" if p.effect_size > 0 else "higher"
+    else:
+        direction = "higher" if p.effect_size > 0 else "lower"
     period = (
         f" Recurring ~{p.period_hint_days:.0f}-day rhythm noted."
         if p.period_hint_days
