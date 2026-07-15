@@ -27,17 +27,10 @@ const STEPS: PipelineStep[] = [
     step: 0,
     title: "User onboarding & intent capture",
     agent: "Onboarding Agent",
-    llmCalls: "0–1",
-    llmOptional: true,
+    llmCalls: "0",
     description:
-      "A new user connects wearables and journal sources and states their concern (e.g. low morning energy). Use a structured form for profile and goals, or optionally parse free-text into structured fields.",
+      "A new user connects wearables and journal sources and states their concern (e.g. low morning energy) via a structured form — profile, goals, and device permissions.",
     output: "user_id, profile metadata, connected sources",
-    creativeLlm: {
-      calls: "+1",
-      agent: "Cohort Matcher Agent",
-      idea:
-        "Match the new user to an anonymized archetype cluster (age band, job type, training load, sleep concern) and preload a cohort brief: which metrics matter most, typical missing-data gaps, and what similar users usually discover first.",
-    },
   },
   {
     step: 1,
@@ -90,14 +83,8 @@ const STEPS: PipelineStep[] = [
     agent: "Stats Agent",
     llmCalls: "0",
     description:
-      "Scan metric pairs across lags with FDR correction — Pearson, Spearman, lagged, partial, and directed tests run in parallel.",
+      "Compute correlations with standard equations — Pearson, Spearman, lagged, partial, and directed tests across metric pairs, with FDR correction. Pure statistics, no LLM.",
     output: "CorrelationFinding list (strength, p-value, lag, method)",
-    creativeLlm: {
-      calls: "+1",
-      agent: "Cohort Prior + Validator Agent",
-      idea:
-        "Before narrating, a retrieval step pulls pre-aggregated cohort correlation tables (median r, prevalence, typical lag). The LLM flags which of *your* findings are cohort-typical vs outliers: 'Workout→sleep lag-1 is significant for you (r=0.38) and appears in 61% of similar users; caffeine→sleep is significant for you but only 19% of peers show it — yours may be personal.'",
-    },
   },
   {
     step: 5,
@@ -135,38 +122,17 @@ const STEPS: PipelineStep[] = [
     agent: "Ranker tool",
     llmCalls: "0",
     description:
-      "Merge correlations, anomalies, and patterns into a scored top-k list. Today this is template-based text — the factual backbone for everything downstream.",
+      "Merge correlations, anomalies, and patterns into a scored top-k list using deterministic composite scores. Template-based text — the factual backbone for chat and dashboards.",
     output: "Top 10 Insight objects (kind, score, evidence)",
-    creativeLlm: {
-      calls: "+1",
-      agent: "Cohort Re-ranker Agent",
-      idea:
-        "Re-score insights with a cohort-confidence multiplier: boost findings that are both personally strong *and* replicated across similar users; demote idiosyncratic noise unless effect size is huge. Output explains *why* something ranked #1 — personal signal, cohort validation, or both.",
-    },
   },
   {
     step: 8,
-    title: "Narrative synthesis",
-    agent: "Narrative Agent",
-    llmCalls: "1",
-    description:
-      "Turn structured findings into a human-readable first report. The agent receives only ranked insights, top correlations, anomalies, and patterns — never raw time-series.",
-    output: "3–5 paragraph onboarding digest with actionable experiments",
-    creativeLlm: {
-      calls: "+1",
-      agent: "Comparative Storyteller Agent",
-      idea:
-        "Same call, richer context: inject cohort contrast snippets so the digest reads like 'here's what's unique about you vs people like you.' Example opener: 'Most remote designers in our cohort see sleep recover within 1 day after workouts — your data shows a 2-day lag, which is why mornings still feel flat.'",
-    },
-  },
-  {
-    step: 9,
     title: "Anomaly explanation",
     agent: "Explanation Agent",
     llmCalls: "0–1",
     llmOptional: true,
     description:
-      "Explain the worst day — which metrics drove the multivariate flag. Can be templated (0 calls) or folded into the Step 8 digest to keep batch cost at one call.",
+      "Explain the worst day — which metrics drove the multivariate flag. Can be templated (0 calls) or use one LLM call for a richer plain-language walkthrough.",
     output: "Plain-language walkthrough of top anomaly drivers",
     creativeLlm: {
       calls: "+1",
@@ -176,22 +142,16 @@ const STEPS: PipelineStep[] = [
     },
   },
   {
-    step: 10,
+    step: 9,
     title: "Evaluation (internal)",
     agent: "QA Agent",
     llmCalls: "0",
     description:
       "Score recovery vs. planted ground truth — anomaly F1, correlation recovery, insight precision@k. For dev and benchmarking, not shown to real users.",
     output: "EvalMetrics for tuning",
-    creativeLlm: {
-      calls: "+1 (batch)",
-      agent: "Population Drift Agent",
-      idea:
-        "Weekly batch LLM over aggregated eval + cohort stats — not per user. Surfaces drift: 'Caffeine→sleep correlation recovery dropped 8 pts this quarter; afternoon-workout pattern prevalence rose in the 25–34 cohort.' Amortized to ~0 per new user at inference time.",
-    },
   },
   {
-    step: 11,
+    step: 10,
     title: "Conversational advisor",
     agent: "Advisor Agent",
     llmCalls: "1 per message",
@@ -220,7 +180,7 @@ const COHORT_IDEAS: CohortIdea[] = [
   },
   {
     title: "Similar-user retrieval (RAG)",
-    step: "Steps 4–8",
+    step: "Steps 4–7",
     calls: "+0 per user",
     agent: "Cohort Retrieval tool",
     whatItCompares:
@@ -230,7 +190,7 @@ const COHORT_IDEAS: CohortIdea[] = [
   },
   {
     title: "Cross-user experiment suggestions",
-    step: "Step 8 or 11",
+    step: "Step 10",
     calls: "+1",
     agent: "Experiment Designer Agent",
     whatItCompares:
@@ -240,7 +200,7 @@ const COHORT_IDEAS: CohortIdea[] = [
   },
   {
     title: "Outlier spotlight",
-    step: "Step 7–8",
+    step: "Step 7",
     calls: "+1",
     agent: "Uniqueness Agent",
     whatItCompares:
@@ -252,18 +212,14 @@ const COHORT_IDEAS: CohortIdea[] = [
 
 const BUDGET_ROWS = [
   { phase: "Onboarding (structured form)", calls: "0", note: "Profile + device connect" },
-  { phase: "Onboarding (free-text goals)", calls: "+1", note: "Optional goal parsing" },
   { phase: "Full analysis pipeline (Steps 1–7)", calls: "0", note: "All deterministic" },
-  { phase: "First insight digest (Step 8)", calls: "+1", note: "Recommended" },
-  { phase: "Anomaly deep-dive (Step 9)", calls: "+0 or +1", note: "Merge into digest to save" },
-  { phase: "Chat (Step 11)", calls: "+1 per message", note: "Only when user engages" },
+  { phase: "Anomaly deep-dive (Step 8)", calls: "+0 or +1", note: "Optional LLM explanation" },
+  { phase: "Chat (Step 10)", calls: "+1 per message", note: "Only when user engages" },
 ];
 
 const COHORT_BUDGET_ROWS = [
   { phase: "Cohort almanac retrieval", calls: "0", note: "Pre-computed nightly; RAG over aggregates" },
-  { phase: "Cohort matcher at onboarding", calls: "+1", note: "Archetype + what peers typically find" },
-  { phase: "Cross-user contrast pass (Steps 3–7)", calls: "+1", note: "Single batched call with cohort snippets" },
-  { phase: "Comparative digest (Step 8)", calls: "+1", note: "Personal + 'vs people like you' narrative" },
+  { phase: "Cross-user contrast pass (Steps 3–6)", calls: "+1", note: "Single batched call with cohort snippets" },
   { phase: "Cohort-grounded chat", calls: "+1 per message", note: "Peer outcome stories in context" },
 ];
 
@@ -443,25 +399,14 @@ export function AgenticPipelineOverview() {
           </table>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl border-2 border-slate-200 bg-slate-50 px-5 py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Lean production path
             </p>
             <p className="mt-1 text-sm text-slate-800">
-              <span className="font-mono font-semibold text-indigo-700">1</span>{" "}
-              LLM call at signup (digest only) +{" "}
-              <span className="font-mono font-semibold text-indigo-700">1</span>{" "}
-              per chat turn.
-            </p>
-          </div>
-          <div className="rounded-xl border-2 border-slate-200 bg-slate-50 px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Rich onboarding path
-            </p>
-            <p className="mt-1 text-sm text-slate-800">
-              <span className="font-mono font-semibold text-indigo-700">2</span>{" "}
-              LLM calls at signup (goal parsing + digest) +{" "}
+              <span className="font-mono font-semibold text-indigo-700">0</span>{" "}
+              LLM calls at signup +{" "}
               <span className="font-mono font-semibold text-indigo-700">1</span>{" "}
               per chat turn.
             </p>
@@ -471,9 +416,8 @@ export function AgenticPipelineOverview() {
               Cohort-enhanced path
             </p>
             <p className="mt-1 text-sm text-slate-800">
-              <span className="font-mono font-semibold text-violet-700">3–4</span>{" "}
-              LLM calls at signup (matcher + cross-user contrast + comparative
-              digest) +{" "}
+              <span className="font-mono font-semibold text-violet-700">1</span>{" "}
+              LLM call at signup (cross-user contrast) +{" "}
               <span className="font-mono font-semibold text-violet-700">1</span>{" "}
               per cohort-grounded chat turn.
             </p>
@@ -509,30 +453,26 @@ export function AgenticPipelineOverview() {
         <p className="mt-4 text-sm text-slate-600">
           <strong>Re-analysis</strong> when new data arrives (e.g. weekly refresh):{" "}
           <span className="font-mono text-indigo-700">0</span> LLM calls for
-          recomputation; <span className="font-mono text-indigo-700">+1</span> only
-          if you regenerate the narrative digest.
+          recomputation.
         </p>
       </div>
 
       <div className={`${stepCardClass} border-l-health-600 bg-health-50/30`}>
         <h4 className="text-sm font-semibold text-slate-900">Design principle</h4>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Run the expensive, trustworthy science without an LLM. Use the LLM where
-          human language adds value: first-impression narrative, cross-user
-          contrast, and interactive Q&amp;A. For Emily&apos;s demo (lean path):
-          ~6 months of data →{" "}
+          Run the expensive, trustworthy science without an LLM — correlations via
+          equations, ranking via composite scores. Use the LLM for optional anomaly
+          explanation, cross-user contrast, and interactive Q&amp;A. For Emily&apos;s
+          demo: ~6 months of data →{" "}
           <span className="font-mono text-slate-800">0</span> LLM calls for
-          analysis → <span className="font-mono text-slate-800">1</span> call for
-          the opening summary → <span className="font-mono text-slate-800">1</span>{" "}
-          call each time she asks a question.
+          analysis → <span className="font-mono text-slate-800">1</span> call each
+          time she asks a question in chat.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-slate-600">
           With cohort enhancement, add{" "}
-          <span className="font-mono text-violet-800">2–3</span> signup calls that
-          answer &ldquo;is this just me?&rdquo; — the question users actually care
-          about — by comparing her engine output to anonymized patterns from
-          thousands of similar profiles, without ever exposing individual peer
-          data.
+          <span className="font-mono text-violet-800">1</span> signup call that
+          answers &ldquo;is this just me?&rdquo; by comparing her engine output to
+          anonymized population patterns — without exposing individual peer data.
         </p>
       </div>
     </div>

@@ -13,7 +13,6 @@ import {
 } from "recharts";
 import { useEngine } from "../../hooks/useEngine";
 import { formatMetric } from "../../types/api";
-import { DisclaimerBanner } from "../story/DisclaimerBanner";
 import { EvaluationMetricCard } from "../story/EvaluationMetricCard";
 import { ApiStatusBanner } from "../story/TechnicalPanel";
 
@@ -316,8 +315,6 @@ export function DashboardView({ onBackToStory }: DashboardViewProps) {
             ))}
           </ul>
         </section>
-
-        <DisclaimerBanner />
       </div>
     </div>
   );

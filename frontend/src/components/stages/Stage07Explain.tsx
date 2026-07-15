@@ -40,7 +40,7 @@ export function Stage07Explain() {
     <StorySection
       stageNumber={7}
       title="Explain What Happened"
-      subtitle="Contribution breakdown from the live feature z-scores — not a medical diagnosis."
+      subtitle="Contribution breakdown from the live feature z-scores."
     >
       <ApiStatusBanner loading={loading} error={error} meta={analysis?.meta} />
 

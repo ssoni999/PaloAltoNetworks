@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { sendChatMessage } from "../../api/client";
 import { StorySection } from "../story/StorySection";
-import { DisclaimerBanner } from "../story/DisclaimerBanner";
 import { ApiStatusBanner } from "../story/TechnicalPanel";
 
 interface ChatMessage {
@@ -92,7 +91,7 @@ export function Stage11Chat({ onBack, onRestart, onDashboard }: Props) {
 
       <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-900">
         Each reply re-runs the analysis pipeline (seed=42) and injects findings into
-        the model context. Recommendations are behavioral, not medical diagnoses.
+        the model context.
       </div>
 
       <div className="story-card flex h-[420px] flex-col overflow-hidden p-0">
@@ -198,8 +197,6 @@ export function Stage11Chat({ onBack, onRestart, onDashboard }: Props) {
           </ul>
         </div>
       </div>
-
-      <DisclaimerBanner />
 
       <div className="flex flex-wrap justify-center gap-3 pt-2">
         <button type="button" className="btn-secondary" onClick={onBack}>
