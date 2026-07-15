@@ -20,6 +20,24 @@ const STARTERS = [
   "Summarize my top 3 actionable insights.",
 ];
 
+const CHAT_USE_CASES = [
+  "Design a 2-week behavioral experiment (workout timing, caffeine cutoff, screen curfew).",
+  "Explain a correlation or pattern in plain language — no stats jargon.",
+  "Prioritize which habit to change first based on ranked insights.",
+  "Draft a weekly check-in summary from the latest engine run.",
+  "Compare a finding to cohort norms: \"Is this just me or common?\"",
+  "Build a recovery plan after a flagged anomaly day.",
+];
+
+const DATA_SOURCE_IDEAS = [
+  "Mood / stress journal — unlocks subjective ↔ biometric links.",
+  "Nutrition & meal timing — lagged effects on sleep and HRV.",
+  "Menstrual cycle — contextualizes HRV and resting HR swings.",
+  "Calendar & travel — explains missing data and routine disruption.",
+  "CGM / glucose — metabolic response to workouts and sleep debt.",
+  "Environment (light, temp, air quality) — outdoor & sleep quality context.",
+];
+
 interface Props {
   onBack: () => void;
   onRestart: () => void;
@@ -149,6 +167,35 @@ export function Stage11Chat({ onBack, onRestart, onDashboard }: Props) {
               Send
             </button>
           </form>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Other chatbot use cases
+          </h4>
+          <ul className="mt-2 space-y-1.5 text-sm text-slate-600">
+            {CHAT_USE_CASES.map((item) => (
+              <li key={item} className="flex gap-2 leading-snug">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-health-500" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Data sources to add
+          </h4>
+          <ul className="mt-2 space-y-1.5 text-sm text-slate-600">
+            {DATA_SOURCE_IDEAS.map((item) => (
+              <li key={item} className="flex gap-2 leading-snug">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-indigo-400" />
+                {item}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
